@@ -1,43 +1,73 @@
 import config from "../config";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { User } from "../modules/users/model.users";
+import catchAsync from "../utils/catchAsync";
+import { Request, Response, NextFunction } from 'express';
 
-const USER_ROLE = {
-    admin: 'admin',
-    member: 'member',
+declare global {
+  namespace Express {
+    interface Request { user: JwtPayload; }
+  }
 }
+
+export const USER_ROLE = {
+  admin: "admin",
+  member: "member",
+} as const
 
 type UserRole = keyof typeof USER_ROLE;
 
+const auth = (...requiredRoles: UserRole[]) => { 
+  return catchAsync(async (req:Request, res:Response, next:NextFunction) => {
+    const token = req.cookies.accessToken;  
 
-const authMiddleware = (role: UserRole[]) => {
-    return async (req: any, res: any, next: any) => {
- const token =req.header("Authorization")?.replace("Bearer ", "");
-
-//  Check if token is provided
-        if (!token) {
-            return res.status(401).json({ message: "Unauthorized" });
-        }
-
-    //    Verify the token
-            const decoded =jwt.verify(token, config.JWT_SECRET as string) as JwtPayload
-
-            const {role, email} = decoded;
-            // Check if the user exists
-            const user = await User.isUserExistsByEmail(email);
-            if (!user) {
-                return res.status(401).json({ message: "Unauthorized" });
-            }
+    console.log(token);
 
 
-            // Check if the user has the required role
-            if (!role.includes(role as UserRole)) {
-                return res.status(403).json({ message: "Forbidden" })}
+    if (!token) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
 
-          req.user = decoded as JwtPayload
+    const decoded = jwt.verify(
+      token,
+      config.JWT_SECRET as string
+    ) as JwtPayload;
 
-          next()
-    };
-}
+    console.log(decoded);
 
-export default authMiddleware;
+    const { role, email, iat } = decoded;
+
+    const user = await User.isUserExistsByEmail(email);
+
+    if(!user){
+      res.status(401).json({ message: "Unauthorized" });
+      return   
+    }
+
+    if (
+      user.passwordChangedAt &&
+      User.isJWTIssuedBeforePasswordChanged(
+        user.passwordChangedAt,
+        iat as number,
+      )
+    ) {
+      res.status(403).json({ message: "Forbidden" });
+      return;
+    }
+
+    if (!requiredRoles.includes(role as UserRole)) {
+      res.status(403).json({ message: "Forbidden" });
+      return;
+    }
+
+    req.user = decoded;
+
+    next();
+  });
+};
+
+
+
+
+export default auth

@@ -8,69 +8,94 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.authController = void 0;
 const service_auth_1 = require("./service.auth");
+const catchAsync_1 = __importDefault(require("../../utils/catchAsync"));
+const model_users_1 = require("../users/model.users");
 const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield service_auth_1.authService.loginUser(req.body);
-    const { accessToken, userRole } = result;
+    const { accessToken } = result;
+    console.log(accessToken);
     res.cookie("accessToken", accessToken, {
         httpOnly: true,
         secure: true,
         sameSite: "none",
-        maxAge: 1000 * 60 * 60 * 24 * 365,
+        path: "/",
+        maxAge: 1000 * 60 * 60,
     });
-    // res.cookie("refreshToken", refreshToken, {
-    //     httpOnly: true,
-    //     secure: process.env.NODE_ENV === "production",
-    //     sameSite: "none",
-    // });
     res.cookie("is_auth", true, {
         httpOnly: false,
-        secure: false, // don't use true for localhost
-        sameSite: "lax", // "lax" is safest and works
-    });
-    res.cookie("userRole", userRole, {
-        httpOnly: false,
-        secure: false,
-        sameSite: "lax",
+        secure: true,
+        sameSite: "none",
+        path: "/",
+        maxAge: 1000 * 60 * 60,
     });
     if (result !== undefined && result !== null) {
-        res.status(200).json({ message: "Login successful", data: accessToken, });
+        res
+            .status(200)
+            .json({
+            message: "Login successful",
+            data: accessToken,
+            userRole: result.userRole,
+        });
     }
     else {
         res.status(401).json({ message: "Invalid credentials" });
     }
 });
-const getMe = (req, res) => {
-    if (!req.user) {
-        res.status(401).json({ message: "Not authenticated" });
-        return;
+const getMe = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        if (!req.user) {
+            res.status(401).json({ message: "Not authenticated" });
+            return;
+        }
+        const { email } = req.user;
+        // Find the full user document
+        const user = yield model_users_1.User.findOne({ email }).lean();
+        if (!user) {
+            res.status(404).json({ message: "User not found" });
+            return;
+        }
+        // Don't include password hash
+        delete user.password;
+        res.status(200).json({
+            message: "User profile fetched successfully",
+            data: user,
+        });
     }
-    res.json({ user: req.user });
-};
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
 const logoutUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         res.clearCookie("accessToken", {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            secure: true,
+            sameSite: "none",
             path: "/",
         });
-        // res.clearCookie("refreshToken", {
-        //   httpOnly: true,
-        //   secure: process.env.NODE_ENV === "production",
-        //   sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-        //   path: "/",
-        // });
         res.clearCookie("is_auth", {
             httpOnly: false,
-            secure: process.env.NODE_ENV === "production",
-        });
-        res.clearCookie("userRole", {
-            httpOnly: false,
-            secure: false,
-            sameSite: "lax",
+            secure: true,
+            sameSite: "none",
+            path: "/",
         });
         return res.status(200).json({
             message: "Logged out successfully",
@@ -83,6 +108,17 @@ const logoutUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         });
     }
 });
+const changePassword = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const passwordData = __rest(req.body, []);
+    const result = yield service_auth_1.authService.changePassword(req.user, passwordData);
+    res.status(200).json({
+        message: "Password changed successfully",
+        data: result,
+    });
+}));
 exports.authController = {
-    loginUser, getMe, logoutUser
+    loginUser,
+    getMe,
+    logoutUser,
+    changePassword,
 };

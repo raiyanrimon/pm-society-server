@@ -48,29 +48,32 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.User = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
-const userSchema = new mongoose_1.Schema({
-    name: {
-        type: String,
-        required: true,
-    },
-    email: { type: String, required: true, unique: true },
+const UserSchema = new mongoose_1.Schema({
+    name: { type: String, required: true },
+    email: { type: String, unique: true, required: true },
     password: { type: String, required: true },
-    phoneNumber: { type: String, required: false },
-    course: { type: String },
-    role: {
+    phoneNumber: String,
+    course: String,
+    amount: Number,
+    role: { type: String, enum: ["member", "admin"], default: "member" },
+    packageType: {
         type: String,
-        enum: ["member", "admin"],
-        default: "member",
+        enum: ["IGNITE", "ELEVATE", "ASCEND", "THE_SOCIETY", "THE_SOCIETY_PLUS"]
     },
-    amount: {
-        type: Number,
+    subscriptionType: {
+        type: String,
+        enum: ["monthly", "yearly", "one_time"]
     },
-}, {
-    timestamps: true,
-});
+    subscriptionId: String,
+    subscriptionStatus: {
+        type: String,
+        enum: ["active", "canceled", "past_due", "unpaid"]
+    },
+    subscriptionEndDate: Date
+}, { timestamps: true });
 // hash the password before saving
 // This middleware will run before saving a user document
-userSchema.pre("save", function (next) {
+UserSchema.pre("save", function (next) {
     return __awaiter(this, void 0, void 0, function* () {
         const user = this;
         // Hash the password before saving
@@ -79,20 +82,24 @@ userSchema.pre("save", function (next) {
     });
 });
 // set '' after saving password
-userSchema.post("save", function (doc, next) {
+UserSchema.post("save", function (doc, next) {
     doc.password = "";
     next();
 });
 // find user by email
-userSchema.statics.isUserExistsByEmail = function (email) {
+UserSchema.statics.isUserExistsByEmail = function (email) {
     return __awaiter(this, void 0, void 0, function* () {
         return exports.User.findOne({ email }).select("+password");
     });
 };
 // compare password
-userSchema.statics.isPasswordMatched = function (plainTextPassword, hashedPassword) {
+UserSchema.statics.isPasswordMatched = function (plainTextPassword, hashedPassword) {
     return __awaiter(this, void 0, void 0, function* () {
         return yield bcrypt_1.default.compare(plainTextPassword, hashedPassword);
     });
 };
-exports.User = mongoose_1.default.model("User", userSchema);
+UserSchema.statics.isJWTIssuedBeforePasswordChanged = function (passwordChangedTimestamp, jwtIssuedTimestamp) {
+    const passwordChangedTime = new Date(passwordChangedTimestamp).getTime() / 1000;
+    return passwordChangedTime > jwtIssuedTimestamp;
+};
+exports.User = mongoose_1.default.model("User", UserSchema);

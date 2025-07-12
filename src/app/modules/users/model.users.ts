@@ -1,35 +1,38 @@
 import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
-import Iuser, { UserModel } from "./interface.users";
+import IUser, { UserModel } from "./interface.users";
 
-const userSchema = new Schema<Iuser>(
+const UserSchema: Schema<IUser> = new Schema(
   {
-    name: {
-      type: String,
-      required: true,
-    },
-    email: { type: String, required: true, unique: true },
+    name: { type: String, required: true },
+    email: { type: String, unique: true, required: true },
     password: { type: String, required: true },
-    phoneNumber: { type: String, required: false },
-    course: { type: String },
-    role: {
+    phoneNumber: String,
+    course: String,
+    amount: Number,
+    role: { type: String, enum: ["member", "admin"], default: "member" },
+    packageType: {
       type: String,
-      enum: ["member", "admin"],
-      default: "member",
+      enum: ["IGNITE", "ELEVATE", "ASCEND", "THE_SOCIETY", "THE_SOCIETY_PLUS"]
     },
-    amount: {
-      type: Number,
+    subscriptionType: {
+      type: String,
+      enum: ["monthly", "yearly", "one_time"]
     },
+    subscriptionId: String,
+    subscriptionStatus: {
+      type: String,
+      enum: ["active", "canceled", "past_due", "unpaid"]
+    },
+    subscriptionEndDate: Date
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 // hash the password before saving
 // This middleware will run before saving a user document
-userSchema.pre("save", async function (next) {
-  const user = this as Iuser;
+UserSchema.pre("save", async function (next) {
+  const user = this as IUser;
   // Hash the password before saving
   user.password = await bcrypt.hash(
     user.password,
@@ -39,22 +42,32 @@ userSchema.pre("save", async function (next) {
 });
 
 // set '' after saving password
-userSchema.post("save", function (doc, next) {
+UserSchema.post("save", function (doc, next) {
   doc.password = "";
   next();
 });
 
 // find user by email
-userSchema.statics.isUserExistsByEmail = async function (email: string) {
+UserSchema.statics.isUserExistsByEmail = async function (email: string) {
   return User.findOne({ email }).select("+password");
 };
 
 // compare password
-userSchema.statics.isPasswordMatched = async function (
+UserSchema.statics.isPasswordMatched = async function (
   plainTextPassword,
   hashedPassword
 ) {
   return await bcrypt.compare(plainTextPassword, hashedPassword);
 };
 
-export const User = mongoose.model<Iuser, UserModel>("User", userSchema);
+
+UserSchema.statics.isJWTIssuedBeforePasswordChanged = function (
+  passwordChangedTimestamp: Date,
+  jwtIssuedTimestamp: number,
+) {
+  const passwordChangedTime =
+    new Date(passwordChangedTimestamp).getTime() / 1000;
+  return passwordChangedTime > jwtIssuedTimestamp;
+};
+
+export const User = mongoose.model<IUser, UserModel>("User", UserSchema);

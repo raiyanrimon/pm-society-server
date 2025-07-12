@@ -1,6 +1,6 @@
 import express from 'express';
 import { authController } from './controller.auth';
-import { isAuthenticated } from './middleware.auth';
+import auth, { USER_ROLE } from '../../middlewares/auth';
 
 
 const router = express.Router();
@@ -12,7 +12,8 @@ router.post('/logout', async (req, res, next) => {
 	next(error);
   }
 });
-router.get('/me',isAuthenticated, authController.getMe);
+router.post('/change-password',auth(USER_ROLE.admin, USER_ROLE.member), authController.changePassword);
+router.get('/me',auth(USER_ROLE.admin, USER_ROLE.member), authController.getMe);
 
 
 export const AuthRoutes = router;

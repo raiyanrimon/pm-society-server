@@ -9,6 +9,7 @@ const router = express.Router();
 router.post("/topics", ForumController.createTopic);
 router.get("/topics", ForumController.getAllTopics);
 router.get("/topics/:slug",ForumController.getSingleTopic);
+router.delete("/topics/:slug",ForumController.deleteTopic);
 
 // Message routes
 router.post("/topics/:topicId/messages",ForumController.createMessage);

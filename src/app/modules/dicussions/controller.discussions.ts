@@ -55,10 +55,31 @@ const getMessagesByTopic = catchAsync(async (req, res) => {
   });
 });
 
+const deleteTopic = catchAsync(async (req, res) => {
+    try {
+        const slug = req.params.slug;
+        console.log(slug)
+        const result = await ForumService.deleteTopic(slug);
+        console.log(result)
+        if (!result) {
+            res.status(404).json({ error: "Topic not found" });
+            return;
+        }
+        res.status(200).json({
+            message: "Topic deleted successfully",
+            data: result,
+        });
+    } catch (error) {
+        console.error("Error deleting Topic:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+})
+
 export const ForumController = {
   createTopic,
   getAllTopics,
   getSingleTopic,
   createMessage,
   getMessagesByTopic,
+  deleteTopic
 };

@@ -26,10 +26,14 @@ const createMessage = (topicId, payload) => __awaiter(void 0, void 0, void 0, fu
 const getMessagesByTopic = (topicId) => __awaiter(void 0, void 0, void 0, function* () {
     return yield model_discussions_1.ForumMessage.find({ topicId }).sort({ createdAt: 1 });
 });
+const deleteTopic = (slug) => __awaiter(void 0, void 0, void 0, function* () {
+    return yield model_discussions_1.ForumTopic.findOneAndDelete({ slug });
+});
 exports.ForumService = {
     createTopic,
     getAllTopics,
     getSingleTopic,
     createMessage,
     getMessagesByTopic,
+    deleteTopic
 };

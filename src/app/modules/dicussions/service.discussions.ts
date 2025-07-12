@@ -22,10 +22,16 @@ const getMessagesByTopic = async (topicId: string) => {
   return await ForumMessage.find({ topicId }).sort({ createdAt: 1 });
 };
 
+const deleteTopic = async (slug: string)=>{
+ return await ForumTopic.findOneAndDelete({slug})
+ 
+}
+
 export const ForumService = {
   createTopic,
   getAllTopics,
   getSingleTopic,
   createMessage,
   getMessagesByTopic,
+  deleteTopic
 };

@@ -19,12 +19,11 @@ const createUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, voi
     const role = 'admin';
     const result = yield service_users_1.userService.createUserIntoDB(Object.assign(Object.assign({}, req.body), { role }));
     res.status(201).json({ message: "User created successfully", data: result });
+    return;
 }));
 const getAllUsers = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const users = yield service_users_1.userService.getAllUsers();
-    res
-        .status(200)
-        .json({ message: "Users retrieved successfully", data: users });
+    res.status(200).json({ message: "Users retrieved successfully", data: users });
 }));
 exports.userController = {
     createUser,

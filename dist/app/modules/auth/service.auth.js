@@ -16,6 +16,7 @@ exports.authService = void 0;
 const config_1 = __importDefault(require("../../config"));
 const model_users_1 = require("../users/model.users");
 const utils_auth_1 = require("./utils.auth");
+const bcrypt_1 = __importDefault(require("bcrypt"));
 const loginUser = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     // check if user exists in the database
     const user = yield model_users_1.User.isUserExistsByEmail(payload.email);
@@ -30,23 +31,27 @@ const loginUser = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     // generate JWT token
     const jwtPayload = {
         email: user.email,
-        name: user.name,
-        course: user.course,
         role: user.role,
-        createAt: user.createdAt,
     };
     const accessToken = (0, utils_auth_1.createToken)(jwtPayload, config_1.default.JWT_SECRET, config_1.default.JWT_EXPIRES_IN);
-    // const refreshToken = createToken(
-    //     jwtPayload,
-    //     config.JWT_REFRESH_SECRET as string,
-    //     config.JWT_REFRESH_EXPIRES_IN as string,)
     return {
         accessToken,
-        // refreshToken
         is_auth: true,
         userRole: user.role,
     };
 });
+const changePassword = (userData, payload) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield model_users_1.User.isUserExistsByEmail(userData.email);
+    if (!user) {
+        throw new Error("User not found");
+    }
+    if (user.password && !(yield model_users_1.User.isPasswordMatched(payload.oldPassword, user.password))) {
+        throw new Error("Invalid old password");
+    }
+    const newHashedPassword = yield bcrypt_1.default.hash(payload.newPassword, Number(config_1.default.BCRYPT_SALT_ROUNDS));
+    yield model_users_1.User.findOneAndUpdate({ email: userData.email, role: userData.role }, { password: newHashedPassword, passwordChangedAt: new Date() });
+    return null;
+});
 exports.authService = {
-    loginUser,
+    loginUser, changePassword
 };

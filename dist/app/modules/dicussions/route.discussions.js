@@ -11,6 +11,7 @@ const router = express_1.default.Router();
 router.post("/topics", controller_discussions_1.ForumController.createTopic);
 router.get("/topics", controller_discussions_1.ForumController.getAllTopics);
 router.get("/topics/:slug", controller_discussions_1.ForumController.getSingleTopic);
+router.delete("/topics/:slug", controller_discussions_1.ForumController.deleteTopic);
 // Message routes
 router.post("/topics/:topicId/messages", controller_discussions_1.ForumController.createMessage);
 router.get("/topics/:topicId/messages", controller_discussions_1.ForumController.getMessagesByTopic);
