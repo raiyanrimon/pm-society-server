@@ -1,11 +1,12 @@
 import { Router } from "express";
 import { UserRoutes } from "../modules/users/route.users";
 import {ForumRoutes } from "../modules/dicussions/route.discussions";
-import { AuthRoutes } from "../modules/auth/route.auth";
+
 import { blogRoutes } from "../modules/blogs/route.blog";
 import { EventRoutes } from "../modules/events/route.events";
 import { ResourceRoutes } from "../modules/resources/route.resources";
 import { chatRoutes } from "../modules/chat/route.chat";
+import { AuthRoutes } from "../modules/auth/route.auth";
 
 const router: Router = Router();
 

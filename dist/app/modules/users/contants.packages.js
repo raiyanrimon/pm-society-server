@@ -9,18 +9,18 @@ exports.packages = {
     },
     ELEVATE: {
         type: "one-time",
-        price: 250000,
+        price: 350000,
         description: "ELEVATE with PMP, 2m portal"
     },
     ASCEND: {
         type: "one-time",
-        price: 350000,
+        price: 450000,
         description: "ASCEND with PMI-ACP, 5m portal"
     },
     "THE SOCIETY": {
         type: "subscription",
-        priceIdMonthly: 3900,
-        priceIdAnnual: 39900,
+        priceIdMonthly: 4900,
+        priceIdAnnual: 49900,
         description: "THE SOCIETY membership"
     },
     "THE SOCIETY+": {

@@ -8,17 +8,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __rest = (this && this.__rest) || function (s, e) {
-    var t = {};
-    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-        t[p] = s[p];
-    if (s != null && typeof Object.getOwnPropertySymbols === "function")
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-                t[p[i]] = s[p[i]];
-        }
-    return t;
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -29,60 +18,31 @@ const catchAsync_1 = __importDefault(require("../../utils/catchAsync"));
 const model_users_1 = require("../users/model.users");
 const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield service_auth_1.authService.loginUser(req.body);
-    const { accessToken } = result;
-    console.log(accessToken);
-    res.cookie("accessToken", accessToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        path: "/",
-        maxAge: 1000 * 60 * 60,
-    });
-    res.cookie("is_auth", true, {
-        httpOnly: false,
-        secure: true,
-        sameSite: "none",
-        path: "/",
-        maxAge: 1000 * 60 * 60,
-    });
+    const { accessToken, userRole } = result;
     if (result !== undefined && result !== null) {
-        res
-            .status(200)
-            .json({
+        res.status(200).json({
             message: "Login successful",
             data: accessToken,
-            userRole: result.userRole,
+            userRole
         });
     }
     else {
         res.status(401).json({ message: "Invalid credentials" });
     }
 });
-const getMe = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        if (!req.user) {
-            res.status(401).json({ message: "Not authenticated" });
-            return;
-        }
-        const { email } = req.user;
-        // Find the full user document
-        const user = yield model_users_1.User.findOne({ email }).lean();
-        if (!user) {
-            res.status(404).json({ message: "User not found" });
-            return;
-        }
-        // Don't include password hash
-        delete user.password;
-        res.status(200).json({
-            message: "User profile fetched successfully",
-            data: user,
-        });
+const getMe = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!req.user) {
+        res.status(401).json({ message: "Not authenticated" });
+        return;
     }
-    catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Internal server error" });
+    const user = yield model_users_1.User.findOne({ email: req.user.email }).lean();
+    if (!user) {
+        res.status(404).json({ message: "User not found" });
+        return;
     }
-});
+    delete user.password;
+    res.status(200).json({ message: "User profile fetched", data: user });
+}));
 const logoutUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         res.clearCookie("accessToken", {
@@ -109,7 +69,11 @@ const logoutUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
 });
 const changePassword = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const passwordData = __rest(req.body, []);
+    if (!req.user) {
+        res.status(401).json({ message: "Not authenticated" });
+        return;
+    }
+    const passwordData = req.body;
     const result = yield service_auth_1.authService.changePassword(req.user, passwordData);
     res.status(200).json({
         message: "Password changed successfully",

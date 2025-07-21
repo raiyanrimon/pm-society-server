@@ -16,6 +16,7 @@ exports.PaymentController = void 0;
 const model_users_1 = require("./model.users");
 const service_payment_1 = require("./service.payment");
 const catchAsync_1 = __importDefault(require("../../utils/catchAsync"));
+const sendWelcomeEmail_1 = require("../../utils/sendWelcomeEmail");
 // your existing type guard
 function isOneTimePackage(pkg) {
     return pkg && pkg.type === "one_time";
@@ -29,7 +30,9 @@ const startCheckout = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
     }
     // for recurring packages, ensure subscriptionType is present
     if (!isOneTimePackage(pkg) && !subscriptionType) {
-        res.status(400).json({ error: "Subscription type is required for this package" });
+        res
+            .status(400)
+            .json({ error: "Subscription type is required for this package" });
         return;
     }
     const paymentIntent = yield service_payment_1.PaymentService.createPaymentIntent(packageType, subscriptionType);
@@ -62,7 +65,9 @@ const startSubscriptionCheckout = (0, catchAsync_1.default)((req, res) => __awai
     }
     if (!paymentIntentClientSecret) {
         console.error("PaymentIntent missing or malformed on subscription:", subscription);
-        res.status(500).json({ error: "Payment intent not available yet. Try again later." });
+        res
+            .status(500)
+            .json({ error: "Payment intent not available yet. Try again later." });
         return;
     }
     res.status(200).json({
@@ -147,6 +152,14 @@ const completeSubscriptionRegistration = (0, catchAsync_1.default)((req, res) =>
         subscriptionId: subscription.id,
         customerId: customer.id,
     });
+    // Send welcome email
+    yield (0, sendWelcomeEmail_1.sendWelcomeEmail)({
+        to: user.email,
+        userName: user.name,
+        packageType: user.packageType,
+        subscriptionType: user.subscriptionType,
+        subscriptionEndDate: user.subscriptionEndDate,
+    });
     res.json({
         message: "Subscription registration complete",
         user: {
@@ -157,7 +170,7 @@ const completeSubscriptionRegistration = (0, catchAsync_1.default)((req, res) =>
             subscriptionType: user.subscriptionType,
             subscriptionStatus: user.subscriptionStatus,
             subscriptionEndDate: user.subscriptionEndDate,
-        }
+        },
     });
 }));
 const verifyPayment = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -174,7 +187,9 @@ const verifyPayment = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
     }
     const { packageType, subscriptionType } = paymentIntent.metadata;
     if (subscriptionType !== "one_time") {
-        res.status(400).json({ message: "Use subscription endpoint for recurring payments" });
+        res
+            .status(400)
+            .json({ message: "Use subscription endpoint for recurring payments" });
         return;
     }
     // calculate subscriptionEndDate
@@ -204,6 +219,15 @@ const verifyPayment = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
         amount: paymentIntent.amount,
         subscriptionStatus: subscriptionEndDate ? "active" : undefined,
         subscriptionEndDate,
+    });
+    console.log("User created:", user);
+    // Send welcome email
+    yield (0, sendWelcomeEmail_1.sendWelcomeEmail)({
+        to: user.email,
+        userName: user.name,
+        packageType: user.packageType,
+        subscriptionType: user.subscriptionType,
+        subscriptionEndDate: user.subscriptionEndDate,
     });
     res.json({
         message: "Registration complete",

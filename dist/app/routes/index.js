@@ -3,11 +3,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const route_users_1 = require("../modules/users/route.users");
 const route_discussions_1 = require("../modules/dicussions/route.discussions");
-const route_auth_1 = require("../modules/auth/route.auth");
 const route_blog_1 = require("../modules/blogs/route.blog");
 const route_events_1 = require("../modules/events/route.events");
 const route_resources_1 = require("../modules/resources/route.resources");
 const route_chat_1 = require("../modules/chat/route.chat");
+const route_auth_1 = require("../modules/auth/route.auth");
 const router = (0, express_1.Router)();
 const moduleRoutes = [{
         path: "/users",

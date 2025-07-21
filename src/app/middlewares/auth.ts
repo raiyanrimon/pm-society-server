@@ -1,73 +1,23 @@
-import config from "../config";
-import jwt, { JwtPayload } from "jsonwebtoken";
-import { User } from "../modules/users/model.users";
-import catchAsync from "../utils/catchAsync";
+import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
+import catchAsync from '../utils/catchAsync';
+import config from '../config';
 
-declare global {
-  namespace Express {
-    interface Request { user: JwtPayload; }
-  }
+interface AuthRequest extends Request {
+  user?: jwt.JwtPayload;
 }
 
-export const USER_ROLE = {
-  admin: "admin",
-  member: "member",
-} as const
+export const authenticateJWT = catchAsync(async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
 
-type UserRole = keyof typeof USER_ROLE;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    res.status(401).json({ message: 'Unauthorized' });
+    return;
+  }
 
-const auth = (...requiredRoles: UserRole[]) => { 
-  return catchAsync(async (req:Request, res:Response, next:NextFunction) => {
-    const token = req.cookies.accessToken;  
+  const token = authHeader.split(' ')[1];
 
-    console.log(token);
-
-
-    if (!token) {
-      res.status(401).json({ message: "Unauthorized" });
-      return;
-    }
-
-    const decoded = jwt.verify(
-      token,
-      config.JWT_SECRET as string
-    ) as JwtPayload;
-
-    console.log(decoded);
-
-    const { role, email, iat } = decoded;
-
-    const user = await User.isUserExistsByEmail(email);
-
-    if(!user){
-      res.status(401).json({ message: "Unauthorized" });
-      return   
-    }
-
-    if (
-      user.passwordChangedAt &&
-      User.isJWTIssuedBeforePasswordChanged(
-        user.passwordChangedAt,
-        iat as number,
-      )
-    ) {
-      res.status(403).json({ message: "Forbidden" });
-      return;
-    }
-
-    if (!requiredRoles.includes(role as UserRole)) {
-      res.status(403).json({ message: "Forbidden" });
-      return;
-    }
-
-    req.user = decoded;
-
-    next();
-  });
-};
-
-
-
-
-export default auth
+  const decoded = jwt.verify(token, config.JWT_SECRET as string) as jwt.JwtPayload;
+  req.user = decoded; // attach user info to request
+  next();
+});

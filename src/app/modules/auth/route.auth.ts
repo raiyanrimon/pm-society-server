@@ -1,6 +1,7 @@
 import express from 'express';
 import { authController } from './controller.auth';
-import auth, { USER_ROLE } from '../../middlewares/auth';
+import { authenticateJWT } from '../../middlewares/auth';
+
 
 
 const router = express.Router();
@@ -12,8 +13,7 @@ router.post('/logout', async (req, res, next) => {
 	next(error);
   }
 });
-router.post('/change-password',auth(USER_ROLE.admin, USER_ROLE.member), authController.changePassword);
-router.get('/me',auth(USER_ROLE.admin, USER_ROLE.member), authController.getMe);
-
+router.get("/me", authenticateJWT, authController.getMe);
+router.post("/change-password", authenticateJWT, authController.changePassword);
 
 export const AuthRoutes = router;

@@ -9,12 +9,14 @@ const app: Application = express();
 app.use(express.json());
 app.use(
   cors({
-    origin: ["https://pm-society.vercel.app", "http://localhost:3000"],
+    origin: ["http://localhost:3000", "https://pm-society.vercel.app"],
     credentials: true,
   })
 );
 
 app.use(cookieParser());
+
+
 
 app.use("/api/", router);
 

@@ -28,6 +28,7 @@ const loginUser = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     if (!isPasswordValid) {
         throw new Error("Invalid password");
     }
+    const userRole = user.role;
     // generate JWT token
     const jwtPayload = {
         email: user.email,
@@ -36,8 +37,7 @@ const loginUser = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const accessToken = (0, utils_auth_1.createToken)(jwtPayload, config_1.default.JWT_SECRET, config_1.default.JWT_EXPIRES_IN);
     return {
         accessToken,
-        is_auth: true,
-        userRole: user.role,
+        userRole
     };
 });
 const changePassword = (userData, payload) => __awaiter(void 0, void 0, void 0, function* () {

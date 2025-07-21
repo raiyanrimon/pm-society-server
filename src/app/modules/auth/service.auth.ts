@@ -20,6 +20,8 @@ const loginUser = async(payload: IAuth) => {
         throw new Error("Invalid password");
     }
 
+    const userRole = user.role;
+
     // generate JWT token
     const jwtPayload = {
         email: user.email,
@@ -33,10 +35,10 @@ const loginUser = async(payload: IAuth) => {
 
 
 
+
 return {
         accessToken,
-        is_auth: true,
-        userRole: user.role,
+        userRole
        
     }
 }
